@@ -7,6 +7,11 @@ LATEST_RELEASE_URL="https://api.github.com/repos/${REPO}/releases/latest"
 RELEASE_ASSET_URL="https://github.com/${REPO}/releases/download/rust-v%s/%s"
 SIGSTORE_IDENTITY_REGEX='^https://github.com/openai/codex/.github/workflows/rust-release\.yml@refs/tags/rust-v.*$'
 SIGSTORE_ISSUER='https://token.actions.githubusercontent.com'
+DOWNLOAD_HEADERS=(
+  -H "Accept: application/vnd.github+json"
+  -H "User-Agent: codex-installer"
+)
+DOWNLOAD_TIMEOUT_SECONDS=20
 
 INSTALL_DIR="${CODEX_INSTALL_DIR:-${HOME}/.local/bin}"
 ASSUME_YES="${CODEX_ASSUME_YES:-0}"
@@ -76,12 +81,16 @@ download_text() {
   local url="$1"
 
   if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$url"
+    curl -fsSL \
+      --connect-timeout "$DOWNLOAD_TIMEOUT_SECONDS" \
+      --max-time "${DOWNLOAD_TIMEOUT_SECONDS}" \
+      "${DOWNLOAD_HEADERS[@]}" \
+      "$url"
     return
   fi
 
   if command -v wget >/dev/null 2>&1; then
-    wget -q -O - "$url"
+    wget --https-only --timeout="$DOWNLOAD_TIMEOUT_SECONDS" -q -O - "$url"
     return
   fi
 
@@ -94,7 +103,11 @@ download_file() {
   local output_path="$2"
 
   if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$url" -o "$output_path"
+    curl -fsSL \
+      --connect-timeout "$DOWNLOAD_TIMEOUT_SECONDS" \
+      --max-time "${DOWNLOAD_TIMEOUT_SECONDS}" \
+      "${DOWNLOAD_HEADERS[@]}" \
+      "$url" -o "$output_path"
     return
   fi
 
@@ -130,6 +143,10 @@ resolve_version() {
   requested="$(normalize_version "$requested")"
 
   if [ "$requested" != "latest" ]; then
+    if ! [[ "$requested" =~ ^[0-9]+(\.[0-9]+){2}[A-Za-z0-9._-]*$ ]]; then
+      echo "Invalid version format: $requested" >&2
+      exit 1
+    fi
     printf '%s\n' "$requested"
     return
   fi
@@ -173,10 +190,11 @@ verify_payload() {
     echo "Signature verification failed for $file_path:" >&2
     cat "$verify_log" >&2
     rm -f "$verify_log"
-    exit 1
+    return 1
   fi
 
   rm -f "$verify_log"
+  return 0
 }
 
 extract_binary() {
@@ -328,6 +346,7 @@ run_install() {
   local version
   local tarball_path
   local sig_path
+  local extracted_binary
   local target="${INSTALL_DIR}/codex"
   local tmp_dir
 
@@ -363,9 +382,15 @@ run_install() {
 
   download_file "$tarball_url" "$tarball_path"
   download_file "$sig_url" "$sig_path"
-  verify_payload "$tarball_path" "$sig_path"
-
   extracted_binary="$(extract_binary "$tarball_path" "$tmp_dir")"
+
+  if ! verify_payload "$tarball_path" "$sig_path"; then
+    echo "Tarball signature check failed. Trying extracted binary check next."
+    if ! verify_payload "$extracted_binary" "$sig_path"; then
+      echo "No valid signature was found for the downloaded payload and extracted binary." >&2
+      exit 1
+    fi
+  fi
 
   mkdir -p "$INSTALL_DIR"
   require_command install
@@ -380,7 +405,6 @@ run_install() {
       exit 0
     fi
 
-    local -a extra_bins=()
     local -a removable_path_bins=()
     local -a other_path_bins=()
 
@@ -554,9 +578,17 @@ fi
 
 case "$command_name" in
   latest)
+    if [ "${#command_args[@]}" -gt 0 ]; then
+      echo "The 'latest' command does not accept arguments." >&2
+      exit 1
+    fi
     latest
     ;;
   status)
+    if [ "${#command_args[@]}" -gt 0 ]; then
+      echo "The 'status' command does not accept arguments." >&2
+      exit 1
+    fi
     status
     ;;
   install)
