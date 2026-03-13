@@ -1,63 +1,49 @@
 # Linux Codex Installer
 
-Simple local installer for the latest `openai/codex` Linux x86_64 binary.
+A small, public-facing installer for the official `openai/codex` Linux x86_64 binary.
 
-## Features
-- Checks the latest release from `https://github.com/openai/codex/releases/latest`.
-- Downloads:
-  - `codex-x86_64-unknown-linux-gnu.tar.gz`
-  - `codex-x86_64-unknown-linux-gnu.sigstore`
-- Verifies the downloaded tarball with `cosign` when available (identity/issuer constraints are enforced).
-- Installs to `~/.local/bin/codex` by default (no root required).
-- Shows and compares current install version before overwrite.
-- Optional cleanup prompts for other `codex*` executables found in the install directory.
-- Checks for other `codex` executables on PATH and reports which are outside the install directory.
+## What it does
+
+- Resolves the latest release from `https://github.com/openai/codex/releases/latest`.
+- Downloads `codex-x86_64-unknown-linux-gnu.tar.gz` and matching `.sigstore` bundle.
+- Installs to `~/.local/bin/codex` by default (user-level, no `root` required).
+- Supports overwrite flow with version comparison and prompts before removing alternatives.
+- Supports local cleanup and audit of existing `codex` binaries on `PATH`.
+
+## Supported platform
+
+- Linux x86_64 (`x86_64` / `amd64`) only.
+
+## Files
+
+- [`scripts/install-codex.sh`](/home/emmy/git/linux-codex-installer/scripts/install-codex.sh): installer implementation.
+- [`Makefile`](/home/emmy/git/linux-codex-installer/Makefile): convenience targets.
+- [`LICENSE`](/home/emmy/git/linux-codex-installer/LICENSE): project license for public use.
 
 ## Requirements
-- Linux x86_64.
+
+- `bash`
 - `curl` or `wget` for downloads.
-- `cosign` for signature verification (optional; if not present install continues with a warning).
+- `tar` and `install`
+- `cosign` (optional): required only if you want mandatory signature verification.
+
+If `cosign` is missing, installation continues with a warning.
 
 ## Usage
 
-### Check latest version
+### Basic script usage
 
 ```bash
 ./scripts/install-codex.sh latest
-```
-
-### Install latest release (interactive)
-
-```bash
-./scripts/install-codex.sh install
-```
-
-### Install a specific version
-
-```bash
-./scripts/install-codex.sh install 0.114.0
-```
-
-### Status
-
-```bash
 ./scripts/install-codex.sh status
-```
-
-### Uninstall
-
-```bash
-# remove only current ${INSTALL_DIR}/codex
+./scripts/install-codex.sh install
+./scripts/install-codex.sh install 0.114.0
 ./scripts/install-codex.sh uninstall
-
-# remove only if current version matches requested
 ./scripts/install-codex.sh uninstall 0.114.0
-
-# remove all codex* files in install directory
 ./scripts/install-codex.sh uninstall all
 ```
 
-## Makefile targets
+### Makefile targets
 
 ```bash
 make latest
@@ -68,14 +54,46 @@ make uninstall
 make uninstall UNINSTALL_VERSION=all
 ```
 
-You can override install location:
+### Install location override
 
 ```bash
-make install INSTALL_DIR=$HOME/bin
+make install INSTALL_DIR=$HOME/bin VERSION=0.114.0
 ```
 
-## Behavior notes
+### Non-interactive mode
 
-- `cosign` command is optional. If missing, the installer prints a warning and proceeds.
-- Overwrite prompt shows `existing_version -> requested_version`.
-- Extra local versions in the install directory are listed before overwrite and can be removed with a prompt (default `No`).
+Use `--yes` or env `CODEX_ASSUME_YES=1` for automation.
+
+```bash
+./scripts/install-codex.sh --yes install
+# or
+CODEX_ASSUME_YES=1 ./scripts/install-codex.sh uninstall all
+```
+
+## Verification behavior
+
+Signature verification is attempted with:
+
+```bash
+cosign verify-blob --bundle <sigstore_file> \
+  --certificate-identity-regexp '^https://github.com/openai/codex/.github/workflows/rust-release\\.yml@refs/tags/rust-v.*$' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com <file>
+```
+
+The installer verifies the downloaded payload first, and falls back to the extracted binary signature if needed.
+
+## Uninstall behavior
+
+- `uninstall` removes only `INSTALL_DIR/codex` after confirm.
+- `uninstall <version>` removes only when installed version matches.
+- `uninstall all` removes `codex*` files in install dir after confirm.
+
+## Version compatibility
+
+- `install [version]` accepts `x.y.z` style versions (for example, `0.114.0`).
+- `latest` always resolves the latest GitHub release tag `rust-v*` automatically.
+
+## Environment variables
+
+- `CODEX_INSTALL_DIR` — override default install location.
+- `CODEX_ASSUME_YES=1` — skip prompts.
