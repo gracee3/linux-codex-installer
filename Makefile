@@ -6,7 +6,15 @@ INSTALL_DIR ?= $(HOME)/.local/bin
 VERSION ?= latest
 UNINSTALL_VERSION ?=
 
-.PHONY: help latest status install uninstall lint
+.PHONY: help latest status install uninstall lint config
+
+ifeq ($(filter config,$(MAKECMDGOALS)),config)
+  INSTALL_CMD_ARG = config
+  STATUS_CMD_ARG = config
+else
+  INSTALL_CMD_ARG = $(VERSION)
+  STATUS_CMD_ARG =
+endif
 
 help:
 	@echo "codex installer"
@@ -14,7 +22,9 @@ help:
 	@echo "Targets:"
 	@echo "  latest      Fetch and print latest codex version"
 	@echo "  status      Show codex executables on PATH and install dir"
+	@echo "  status config  Show the repository config.toml"
 	@echo "  install     Install codex to $(INSTALL_DIR)"
+	@echo "  install config Install repository config.toml into ~/.codex/config.toml"
 	@echo "  uninstall   Uninstall codex from $(INSTALL_DIR)"
 	@echo ""
 	@echo "Variables:"
@@ -33,13 +43,16 @@ latest:
 	@$(SCRIPT) latest
 
 status:
-	@$(SCRIPT) --install-dir $(INSTALL_DIR) status
+	@$(SCRIPT) --install-dir $(INSTALL_DIR) status $(STATUS_CMD_ARG)
 
 install:
-	@$(SCRIPT) --install-dir $(INSTALL_DIR) install $(VERSION)
+	@$(SCRIPT) --install-dir $(INSTALL_DIR) install $(INSTALL_CMD_ARG)
 
 uninstall:
 	@$(SCRIPT) --install-dir $(INSTALL_DIR) uninstall $(UNINSTALL_VERSION)
 
 lint:
 	@bash -n $(SCRIPT)
+
+config:
+	@:

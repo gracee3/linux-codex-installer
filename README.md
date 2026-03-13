@@ -18,6 +18,7 @@ A small, public-facing installer for the official `openai/codex` Linux x86_64 bi
 
 - [`scripts/install-codex.sh`](/home/emmy/git/linux-codex-installer/scripts/install-codex.sh): installer implementation.
 - [`Makefile`](/home/emmy/git/linux-codex-installer/Makefile): convenience targets.
+- [`config.toml`](/home/emmy/git/linux-codex-installer/config.toml): default repo Codex config for `make install config`.
 - [`LICENSE`](/home/emmy/git/linux-codex-installer/LICENSE): project license for public use.
 
 ## Requirements
@@ -36,7 +37,9 @@ If `cosign` is missing, installation continues with a warning.
 ```bash
 ./scripts/install-codex.sh latest
 ./scripts/install-codex.sh status
+./scripts/install-codex.sh status config
 ./scripts/install-codex.sh install
+./scripts/install-codex.sh install config
 ./scripts/install-codex.sh install 0.114.0
 ./scripts/install-codex.sh uninstall
 ./scripts/install-codex.sh uninstall 0.114.0
@@ -48,7 +51,9 @@ If `cosign` is missing, installation continues with a warning.
 ```bash
 make latest
 make status
+make status config
 make install
+make install config
 make install VERSION=0.114.0
 make uninstall
 make uninstall UNINSTALL_VERSION=all
@@ -97,3 +102,4 @@ The installer verifies the downloaded payload first, and falls back to the extra
 
 - `CODEX_INSTALL_DIR` — override default install location.
 - `CODEX_ASSUME_YES=1` — skip prompts.
+- `CODEX_HOME` — override config install path used by `install config` (default `~/.codex`).

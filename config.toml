@@ -1,0 +1,29 @@
+model = "gpt-5.3-codex-spark"
+model_reasoning_effort = "xhigh"
+personality = "pragmatic"
+service_tier = "fast"
+
+[tui]
+status_line = ["model-with-reasoning", "current-dir", "git-branch", "context-remaining", "five-hour-limit", "weekly-limit", "codex-version", "context-window-size", "used-tokens"]
+
+[features]
+personality = false
+request_permissions = false
+multi_agent = true
+memories = false
+fast_mode = true
+
+[profiles.local]
+model_provider = "vllm"
+model = "local-model"
+
+[model_providers.vllm]
+name = "vLLM"
+base_url = "http://127.0.0.1:8000/v1"
+wire_api = "responses"
+
+[notice]
+hide_full_access_warning = true
+
+[notice.model_migrations]
+"gpt-5.2" = "gpt-5.3-codex"

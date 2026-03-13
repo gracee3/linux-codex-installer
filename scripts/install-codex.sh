@@ -12,6 +12,10 @@ DOWNLOAD_HEADERS=(
   -H "User-Agent: codex-installer"
 )
 DOWNLOAD_TIMEOUT_SECONDS=20
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="${SCRIPT_DIR%/scripts}"
+REPO_CONFIG_FILE="${REPO_ROOT}/config.toml"
+CODEX_HOME="${CODEX_HOME:-${HOME}/.codex}"
 
 INSTALL_DIR="${CODEX_INSTALL_DIR:-${HOME}/.local/bin}"
 ASSUME_YES="${CODEX_ASSUME_YES:-0}"
@@ -27,8 +31,14 @@ Commands:
   status
     Show codex executables currently discoverable on PATH and in install directory.
 
+  status config
+    Show the repository config.toml contents.
+
   install [version]
     Download and install the Linux x86_64 binary. If no version is provided, latest is used.
+
+  install config
+    Copy the repo config.toml to ${CODEX_HOME}/config.toml.
 
   uninstall [version|all]
     Remove installed binary at ${INSTALL_DIR}/codex.
@@ -40,9 +50,10 @@ Options:
   --install-dir <dir>    Override install directory (default: ${HOME}/.local/bin)
   -h, --help            Show this help text
 
-Environment:
+  Environment:
   CODEX_INSTALL_DIR     Override install directory
   CODEX_ASSUME_YES      Skip prompts when set to 1
+  CODEX_HOME            Override target config install directory (default: ${HOME}/.codex)
 USAGE
 }
 
@@ -291,6 +302,25 @@ collect_codex_in_path() {
 }
 
 status() {
+  local mode="${1-}"
+
+  if [ "$mode" = "config" ]; then
+    if [ ! -f "$REPO_CONFIG_FILE" ]; then
+      echo "Repository config not found: $REPO_CONFIG_FILE"
+      return 1
+    fi
+
+    echo "Repository config: $REPO_CONFIG_FILE"
+    echo "---"
+    cat "$REPO_CONFIG_FILE"
+    return 0
+  fi
+
+  if [ -n "$mode" ]; then
+    echo "The 'status' command accepts only 'config' as an optional argument." >&2
+    return 1
+  fi
+
   local -a path_bins=()
   local -a install_bins=()
   local -A seen_path=()
@@ -463,6 +493,26 @@ run_install() {
   fi
 }
 
+run_install_config() {
+  local target="${CODEX_HOME}/config.toml"
+
+  if [ ! -f "$REPO_CONFIG_FILE" ]; then
+    echo "Repository config not found: $REPO_CONFIG_FILE" >&2
+    return 1
+  fi
+
+  mkdir -p "${CODEX_HOME}"
+  if [ -f "$target" ]; then
+    if ! prompt_yes_no "Overwrite ${target}?"; then
+      echo "Config install cancelled."
+      return 0
+    fi
+  fi
+
+  cp "$REPO_CONFIG_FILE" "$target"
+  echo "Installed repository config to ${target}."
+}
+
 run_uninstall() {
   local requested="${1-}"
   local target="${INSTALL_DIR}/codex"
@@ -585,13 +635,23 @@ case "$command_name" in
     latest
     ;;
   status)
-    if [ "${#command_args[@]}" -gt 0 ]; then
-      echo "The 'status' command does not accept arguments." >&2
+    if [ "${#command_args[@]}" -gt 1 ]; then
+      echo "Only one optional argument is supported for this command." >&2
       exit 1
     fi
-    status
+    status "${command_args[0]-}"
     ;;
   install)
+    if [ "${#command_args[@]}" -gt 1 ]; then
+      echo "Only one optional argument is supported for this command." >&2
+      exit 1
+    fi
+
+    if [ "${command_args[0]-}" = "config" ]; then
+      run_install_config
+      exit $?
+    fi
+
     run_install "${command_args[0]-latest}"
     ;;
   uninstall)
