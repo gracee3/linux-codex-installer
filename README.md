@@ -17,6 +17,7 @@ A small, public-facing installer for the official `openai/codex` Linux x86_64 bi
 ## Files
 
 - [`scripts/install-codex.sh`](/home/emmy/git/linux-codex-installer/scripts/install-codex.sh): installer implementation.
+- [`scripts/source-install.sh`](/home/emmy/git/linux-codex-installer/scripts/source-install.sh): syncs `~/git/codex` to the latest release tag.
 - [`Makefile`](/home/emmy/git/linux-codex-installer/Makefile): convenience targets.
 - [`config.toml`](/home/emmy/git/linux-codex-installer/config.toml): default repo Codex config for `make install config`.
 - [`LICENSE`](/home/emmy/git/linux-codex-installer/LICENSE): project license for public use.
@@ -24,6 +25,7 @@ A small, public-facing installer for the official `openai/codex` Linux x86_64 bi
 ## Requirements
 
 - `bash`
+- `git`
 - `curl` or `wget` for downloads.
 - `tar` and `install`
 - `cosign` (optional): required only if you want mandatory signature verification.
@@ -44,6 +46,7 @@ If `cosign` is missing, installation continues with a warning.
 ./scripts/install-codex.sh uninstall
 ./scripts/install-codex.sh uninstall 0.114.0
 ./scripts/install-codex.sh uninstall all
+./scripts/source-install.sh
 ```
 
 ### Makefile targets
@@ -55,9 +58,26 @@ make status config
 make install
 make install config
 make install VERSION=0.114.0
+make source-install
+make source-install SOURCE_DIR=~/git/codex
 make uninstall
 make uninstall UNINSTALL_VERSION=all
 ```
+
+### Source install target
+
+```bash
+make source-install
+CODEX_ASSUME_YES=1 make source-install SOURCE_DIR=~/git/codex
+./scripts/source-install.sh --dir ~/git/codex
+```
+
+This:
+- Resolves the latest release tag from `openai/codex` (for example `rust-v0.114.0`)
+- Accepts `--tag` values as `0.114.0`, `v0.114.0`, or `rust-v0.114.0`
+- Fetches tags from GitHub and checks out that tag into the source directory
+- Prompts before destructive reset if local changes would block checkout
+- Falls back to `git reset --hard HEAD` + `git clean -fd` only after confirmation
 
 ### Install location override
 
@@ -103,3 +123,5 @@ The installer verifies the downloaded payload first, and falls back to the extra
 - `CODEX_INSTALL_DIR` — override default install location.
 - `CODEX_ASSUME_YES=1` — skip prompts.
 - `CODEX_HOME` — override config install path used by `install config` (default `~/.codex`).
+- `CODEX_SOURCE_DIR` — override source checkout location for `source-install` (default `~/git/codex`).
+- `CODEX_SOURCE_REMOTE` — override source git remote for `source-install`.
