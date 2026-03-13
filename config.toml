@@ -2,6 +2,8 @@ model = "gpt-5.3-codex-spark"
 model_reasoning_effort = "xhigh"
 personality = "pragmatic"
 service_tier = "fast"
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
 
 [tui]
 status_line = ["model-with-reasoning", "current-dir", "git-branch", "context-remaining", "five-hour-limit", "weekly-limit", "codex-version", "context-window-size", "used-tokens"]
