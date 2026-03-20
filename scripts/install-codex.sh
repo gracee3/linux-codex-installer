@@ -182,14 +182,9 @@ asset_urls() {
   printf '%s\n' "$(printf "$RELEASE_ASSET_URL" "$version" "$sig_file")"
 }
 
-verify_payload() {
+verify_binary() {
   local file_path="$1"
   local sigstore_path="$2"
-
-  if ! command -v cosign >/dev/null 2>&1; then
-    echo "Warning: cosign is not installed. Skipping signature verification (auto-fallback mode)."
-    return 0
-  fi
 
   local verify_log
   verify_log="$(mktemp)"
@@ -393,6 +388,8 @@ run_install() {
   version="$(resolve_version "$requested_version")"
   echo "Resolved version: $version"
 
+  require_command cosign
+
   tmp_dir="$(mktemp -d)"
   _run_install_tmp_dir="$tmp_dir"
   trap cleanup_tmp_dir EXIT
@@ -414,13 +411,12 @@ run_install() {
   download_file "$sig_url" "$sig_path"
   extracted_binary="$(extract_binary "$tarball_path" "$tmp_dir")"
 
-  if ! verify_payload "$tarball_path" "$sig_path"; then
-    echo "Tarball signature check failed. Trying extracted binary check next."
-    if ! verify_payload "$extracted_binary" "$sig_path"; then
-      echo "No valid signature was found for the downloaded payload and extracted binary." >&2
-      exit 1
-    fi
+  if ! verify_binary "$extracted_binary" "$sig_path"; then
+    echo "No valid signature was found for the extracted binary." >&2
+    exit 1
   fi
+
+  echo "Verified extracted binary with cosign."
 
   mkdir -p "$INSTALL_DIR"
   require_command install

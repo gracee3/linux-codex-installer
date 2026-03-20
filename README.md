@@ -28,9 +28,7 @@ A small, public-facing installer for the official `openai/codex` Linux x86_64 bi
 - `git`
 - `curl` or `wget` for downloads.
 - `tar` and `install`
-- `cosign` (optional): required only if you want mandatory signature verification.
-
-If `cosign` is missing, installation continues with a warning.
+- `cosign` for required signature verification before install.
 
 ## Usage
 
@@ -42,9 +40,9 @@ If `cosign` is missing, installation continues with a warning.
 ./scripts/install-codex.sh status config
 ./scripts/install-codex.sh install
 ./scripts/install-codex.sh install config
-./scripts/install-codex.sh install 0.114.0
+./scripts/install-codex.sh install 0.116.0
 ./scripts/install-codex.sh uninstall
-./scripts/install-codex.sh uninstall 0.114.0
+./scripts/install-codex.sh uninstall 0.116.0
 ./scripts/install-codex.sh uninstall all
 ./scripts/source-install.sh
 ```
@@ -57,7 +55,7 @@ make status
 make status config
 make install
 make install config
-make install VERSION=0.114.0
+make install VERSION=0.116.0
 make source-install
 make source-install SOURCE_DIR=~/git/codex
 make uninstall
@@ -73,8 +71,8 @@ CODEX_ASSUME_YES=1 make source-install SOURCE_DIR=~/git/codex
 ```
 
 This:
-- Resolves the latest release tag from `openai/codex` (for example `rust-v0.114.0`)
-- Accepts `--tag` values as `0.114.0`, `v0.114.0`, or `rust-v0.114.0`
+- Resolves the latest release tag from `openai/codex` (currently `rust-v0.116.0`)
+- Accepts `--tag` values as `0.116.0`, `v0.116.0`, or `rust-v0.116.0`
 - Fetches tags from GitHub and checks out that tag into the source directory
 - Prompts before destructive reset if local changes would block checkout
 - Falls back to `git reset --hard HEAD` + `git clean -fd` only after confirmation
@@ -82,7 +80,7 @@ This:
 ### Install location override
 
 ```bash
-make install INSTALL_DIR=$HOME/bin VERSION=0.114.0
+make install INSTALL_DIR=$HOME/bin VERSION=0.116.0
 ```
 
 ### Non-interactive mode
@@ -105,7 +103,7 @@ cosign verify-blob --bundle <sigstore_file> \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com <file>
 ```
 
-The installer verifies the downloaded payload first, and falls back to the extracted binary signature if needed.
+The installer extracts the binary and verifies that binary with `cosign` before copying it into the install directory.
 
 ## Uninstall behavior
 
@@ -115,8 +113,12 @@ The installer verifies the downloaded payload first, and falls back to the extra
 
 ## Version compatibility
 
-- `install [version]` accepts `x.y.z` style versions (for example, `0.114.0`).
+- `install [version]` accepts `x.y.z` style versions (for example, `0.116.0`).
 - `latest` always resolves the latest GitHub release tag `rust-v*` automatically.
+
+## Tracked release
+
+This repo is currently aligned with upstream Codex release `0.116.0`.
 
 ## Environment variables
 

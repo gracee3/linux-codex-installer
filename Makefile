@@ -41,7 +41,7 @@ help:
 	@echo "  make status"
 	@echo "  make source-install"
 	@echo "  make source-install SOURCE_DIR=~/git/codex"
-	@echo "  make install VERSION=0.114.0"
+	@echo "  make install VERSION=0.116.0"
 	@echo "  make uninstall UNINSTALL_VERSION=all"
 	@echo "  make install INSTALL_DIR=~/bin"
 

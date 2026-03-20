@@ -21,7 +21,7 @@ Usage: source-install.sh [--yes] [--dir <path>] [--remote <url>] [--tag <release
 Examples:
   source-install.sh
   source-install.sh --dir ~/git/codex
-  source-install.sh --tag rust-v0.114.0
+  source-install.sh --tag rust-v0.116.0
   source-install.sh --yes
 
 Description:
@@ -32,7 +32,7 @@ Options:
   --yes                     Accept prompts without asking (also CODEX_ASSUME_YES=1)
   --dir <path>              Source checkout directory (default: ${HOME}/git/codex)
   --remote <url>            Source remote to fetch tags from (default: $REPO_URL)
-  --tag <tag>               Explicit tag to check out (supports rust-v0.114.0, 0.114.0, or v0.114.0; default: latest release)
+  --tag <tag>               Explicit tag to check out (supports rust-v0.116.0, 0.116.0, or v0.116.0; default: latest release)
   -h, --help               Show this help text
 
 Environment:
@@ -147,7 +147,7 @@ validate_release_tag() {
   local tag="$1"
   if ! [[ "$tag" =~ $TAG_PATTERN ]]; then
     echo "Invalid release tag format: $tag" >&2
-    echo "Expected format: rust-v<semver> (for example rust-v0.114.0)" >&2
+    echo "Expected format: rust-v<semver> (for example rust-v0.116.0)" >&2
     exit 1
   fi
 }
